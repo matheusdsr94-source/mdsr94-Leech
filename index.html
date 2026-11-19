@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calculadora de Leech | MapleLegends</title>
 <style>
-:root{--bg:#f4f1ea;--pn:#fffdf8;--tx:#262320;--mu:#7a736a;--ln:#ded8cb;--ac:#a97a12;--ac2:#fff;--ok:#2f7d4f;--er:#b3382c}
-@media(prefers-color-scheme:dark){:root{--bg:#14171c;--pn:#1c2027;--tx:#e8e4da;--mu:#8d96a3;--ln:#2d333d;--ac:#e2b24c;--ac2:#1a1405;--ok:#6fcf97;--er:#f08a80}}
+:root{--bg:#eef4f5;--pn:#fff;--tx:#14262b;--mu:#5d7479;--ln:#d3e0e3;--ac:#0e7f8c;--ac2:#fff;--tn:#d8f1f5;--ok:#2f7d4f;--er:#b3382c}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1a1d;--pn:#16252a;--tx:#e3eef0;--mu:#8fa6ab;--ln:#27393e;--ac:#58c6d4;--ac2:#06242a;--tn:#143840;--ok:#6fcf97;--er:#f08a80}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:980px;margin:0 auto;padding:20px 14px 60px;display:grid;gap:16px}
@@ -38,6 +38,27 @@ label{display:grid;gap:3px;font-size:13px;color:var(--mu)}
 #msg.er{display:block;color:var(--er);border-color:var(--er)}#msg.ok{display:block;color:var(--ok);border-color:var(--ok)}
 .t{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:6px}
 details summary{cursor:pointer;font-size:13px;color:var(--mu)}
+.lb{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+.rh{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.title{font-size:22px;font-weight:700;border:0;background:transparent;padding:2px 0}
+.runs{display:grid;gap:8px;margin-top:10px}
+.run{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;padding:10px 14px;border-radius:12px}
+.run.on{background:var(--tn);border-color:var(--ac)}.run .rt{font-weight:700;color:var(--ac)}
+.card{border:1px solid var(--ln);border-radius:14px;overflow:hidden;margin-top:10px}.card.done{opacity:.6}
+.row{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr 1.3fr auto}
+.c{padding:10px 14px;border-left:1px solid var(--ln);display:flex;flex-direction:column;gap:2px;justify-content:center;min-width:0}
+.c small{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu)}
+.nm{flex-direction:row;align-items:center;gap:10px;background:var(--tn);border-left:0}
+.nm img{width:44px;height:44px;object-fit:contain;background:var(--bg);border-radius:8px}
+.pay{background:var(--tn);border:0;border-left:1px solid var(--ln);border-radius:0;text-align:left;align-items:flex-start;cursor:pointer}
+.pay small{color:var(--ac)}.pay b{font-size:18px}
+.c.ac{flex-direction:column;gap:6px;align-items:center}
+.ic{width:38px;height:38px;border-radius:50%;padding:0;display:grid;place-items:center}
+.ic.on{background:var(--ac);color:var(--ac2);border-color:var(--ac)}
+.ic.bad{color:var(--er)}
+.et{width:100%;text-align:left;border:0;border-top:1px solid var(--ln);border-radius:0;background:var(--bg);color:var(--ac);font-weight:600}
+.card .ed{margin:0;padding:10px 14px}
+@media(max-width:760px){.row{grid-template-columns:1fr 1fr}.nm{grid-column:1/3}.c{border-top:1px solid var(--ln)}.c.ac{flex-direction:row;grid-column:1/3;justify-content:flex-end}}
 </style>
 </head>
 <body>
@@ -48,20 +69,21 @@ details summary{cursor:pointer;font-size:13px;color:var(--mu)}
 <div id="msg" role="status"></div>
 
 <section class="p">
- <h2>Preço</h2>
- <div class="r"><label>Proporção: 1 meso paga quanto de EXP<input id="ratio" type="number" min="0" step="0.1"></label><button id="addTier">Adicionar faixa</button></div>
- <div id="tiers"></div>
- <p class="m">Defina antes de adicionar compradores. Faixas mudam a proporção a partir de um nível (Nível ≥).</p>
+ <div class="rh"><div><span class="lb">Runs</span><h2 id="runCount" style="margin:0"></h2></div><button class="pri" id="newRun">+ Novo</button></div>
+ <div class="runs" id="runs"></div>
 </section>
 
 <section class="p">
- <h2>Compradores</h2>
- <div class="r"><label>Nome do personagem<input id="nick" placeholder="NomeDoComprador" autocomplete="off"></label><button class="pri" id="add">Adicionar</button><button id="addM">Adicionar manual</button><button id="upAll">Atualizar todos</button></div>
+ <div class="rh"><div style="flex:1"><input id="runName" class="title" aria-label="Nome da run"><div class="m" id="runSub"></div></div><button class="ic bad" id="delRun" aria-label="Excluir run"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>
+ <div class="r" style="margin-top:12px"><label>Proporção · Mesos : EXP<input id="ratio" type="number" min="0" step="0.1"></label><button id="addTier">+ Faixa por nível</button></div>
+ <div id="tiers"></div>
+ <h2 style="margin-top:18px">Compradores</h2>
+ <div class="r"><label>Nome do personagem<input id="nick" placeholder="NomeDoComprador" autocomplete="off"></label><button class="pri" id="add">Adicionar</button><button id="addM">Adicionar manual</button><button id="upAll">Atualizar EXP</button></div>
  <p class="m">Atualize a EXP no jogo antes de buscar: entre em um mapa, troque de canal ou saia do Cash Shop.</p>
  <div id="list"></div>
 </section>
 
-<section class="p"><h2>Status</h2><div class="tot" id="tot"></div><button id="copyAll" style="margin-top:10px">Copiar total</button></section>
+<section class="p"><h2>Status da run</h2><div class="tot" id="tot"></div><button id="copyAll" style="margin-top:10px">Copiar total</button></section>
 
 <section class="p">
  <h2>Calculadora</h2>
@@ -90,9 +112,15 @@ const DR=[15,34,57,92,135,372,560,840,1242,1716,2360,3216,4200,5460,7050,8840,11
 const PR=[];{let t=0;for(const e of DR){PR.push(t);t+=e}}
 const $=id=>document.getElementById(id);
 const KEY="leech-hs-v1";
-const D={ratio:3.3,tiers:[],buyers:[],cfg:{base:"https://dev.legends.ml",proxy:"https://mdsr94leech-proxy.matheusdsr94.workers.dev"},est:{fl:120,fe:0,tl:125,te:0,mode:"ratio",er:3.3,eh:12,ex:35}};
+const D={runs:[],cur:"",cfg:{base:"https://dev.legends.ml",proxy:"https://mdsr94leech-proxy.matheusdsr94.workers.dev"},est:{fl:120,fe:0,tl:125,te:0,mode:"ratio",er:3.3,eh:12,ex:35}};
 let S=D;
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s)S={...D,...s,cfg:{...D.cfg,...s.cfg,proxy:(s.cfg&&s.cfg.proxy)||D.cfg.proxy},est:{...D.est,...s.est}}}catch{}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const mk=(name,ratio,tiers=[])=>({id:uid(),name,ratio,tiers,buyers:[],created:Date.now()});
+const R=()=>S.runs.find(r=>r.id===S.cur)||S.runs[0];
+if(!Array.isArray(S.runs)||!S.runs.length){const r=mk("Run 1",S.ratio||3.3,S.tiers||[]);r.buyers=S.buyers||[];S.runs=[r]}
+if(!S.runs.some(r=>r.id===S.cur))S.cur=S.runs[0].id;
+const IT='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch{}};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const num=(v,d=0)=>{const n=parseFloat(String(v).replace(",","."));return Number.isFinite(n)?n:d};
@@ -151,26 +179,36 @@ async function getChar(name){
  throw new Error((reached?`Personagem "${name}" não encontrado`:"Não foi possível acessar o ranking")+" ("+why.join("; ")+").");
 }
 
-function view(b){
+function view(b,r=R()){
  const c=b.cur||b.start,g=b.start?Math.max(0,cum(c.level,c.exp)-cum(b.start.level,b.start.exp)):0;
- const due=b.start?mesos(b.start.level,b.start.exp,c.level,c.exp,S.ratio,S.tiers):undefined;
+ const due=b.start?mesos(b.start.level,b.start.exp,c.level,c.exp,r.ratio,r.tiers):undefined;
  return{c,g,due};
 }
 
+function total(r){let t=0;for(const b of r.buyers)t+=view(b,r).due||0;return t}
 function render(){
- $("ratio").value=S.ratio;
- $("tiers").innerHTML=S.tiers.map((t,i)=>`<div class="t"><input data-t="${i}" data-k="min" type="number" min="1" max="200" value="${t.min}" aria-label="Nível ≥"><input data-t="${i}" data-k="ratio" type="number" min="0" step="0.1" value="${t.ratio}" aria-label="Proporção"><button data-rt="${i}" aria-label="Remover faixa ${i+1}">✕</button></div>`).join("");
+ const r=R(),ct=S.runs.length;
+ $("runCount").textContent=ct+(ct===1?" ativo":" ativos");
+ $("runs").innerHTML=S.runs.map(x=>`<button class="run${x.id===S.cur?" on":""}" data-run="${x.id}"><span><b>${esc(x.name)}</b><br><span class="m">1 : ${fmtN(x.ratio)} · ${x.buyers.length} comprador${x.buyers.length===1?"":"es"}</span></span><span class="rt">${fmtM(total(x))}</span></button>`).join("");
+ $("runName").value=r.name;
+ $("runSub").textContent=`Proporção · 1 : ${fmtN(r.ratio)} · Criado em ${new Date(r.created).toLocaleString("pt-BR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}`;
+ $("ratio").value=r.ratio;
+ $("tiers").innerHTML=r.tiers.map((t,i)=>`<div class="t"><input data-t="${i}" data-k="min" type="number" min="1" max="200" value="${t.min}" aria-label="Nível ≥"><input data-t="${i}" data-k="ratio" type="number" min="0" step="0.1" value="${t.ratio}" aria-label="Proporção"><button data-rt="${i}" aria-label="Remover faixa ${i+1}">✕</button></div>`).join("");
  let tm=0,te=0;
- $("list").innerHTML=S.buyers.length?S.buyers.map((b,i)=>{
-  const v=view(b);tm+=v.due||0;te+=v.g;
+ $("list").innerHTML=r.buyers.length?r.buyers.map((b,i)=>{
+  const v=view(b,r),s=b.start,c=v.c,dl=c.level-s.level;tm+=v.due||0;te+=v.g;
   const av=S.cfg.base.replace(/\/$/,"")+"/avatar/"+encodeURIComponent(b.ign)+".png";
-  return`<div class="b${b.done?" done":""}"><img src="${av}" alt="" onerror="this.style.visibility='hidden'">
-  <div><b>${esc(b.ign)}</b> <span class="m">${esc(b.job||"")}</span><div class="m">Início: Nv.${b.start.level} · ${fmtN(b.start.exp)}% → Atual: Nv.${v.c.level} · ${fmtN(v.c.exp)}%</div><div class="m">EXP ganha: ${fmtE(v.g)}</div></div>
-  <div class="due">${fmtM(v.due)}</div>
-  <div class="ac"><button class="pri" data-c="${i}">Copiar valor</button><button data-r="${i}" ${b.done?"disabled":""}>Atualizar EXP</button><button data-e="${i}">${b.edit?"Fechar edição":"Editar"}</button><button data-d="${i}">${b.done?"Reabrir":"Concluir"}</button><button data-x="${i}">Excluir</button></div>
-  ${b.edit?`<div class="ed r"><label>Início: nível<input data-i="${i}" data-k="sl" type="number" min="1" max="200" value="${b.start.level}"></label><label>Início: EXP %<input data-i="${i}" data-k="se" type="number" min="0" max="99.99" step="0.01" value="${b.start.exp}"></label><label>Atual: nível<input data-i="${i}" data-k="cl" type="number" min="1" max="200" value="${v.c.level}"></label><label>Atual: EXP %<input data-i="${i}" data-k="ce" type="number" min="0" max="99.99" step="0.01" value="${v.c.exp}"></label></div>`:""}</div>`}).join("")
-  :`<p class="m">Ainda não há compradores. Adicione um para buscar a EXP inicial dele.</p>`;
- $("tot").innerHTML=`<div><b>${fmtM(tm)}</b><span>Total a pagar</span></div><div><b>${S.buyers.length}</b><span>Compradores</span></div><div><b>${fmtE(te)}</b><span>EXP total</span></div>`;
+  return`<div class="card${b.done?" done":""}"><div class="row">
+  <div class="c nm"><img src="${av}" alt="" onerror="this.style.visibility='hidden'"><div><b>${esc(b.ign)}</b><br><span class="m">${esc(b.job||"")}</span></div></div>
+  <div class="c"><small>Iniciar</small><b>Nv.${s.level}</b><span class="m">${fmtN(s.exp)}%</span></div>
+  <div class="c"><small>Atual</small><b>Nv.${c.level}</b><span class="m">${fmtN(c.exp)}%</span></div>
+  <div class="c"><small>EXP ganha</small><b>${fmtE(v.g)}</b><span class="m">${dl>0?"+"+dl+(dl===1?" nível":" níveis"):"mesmo nível"}</span></div>
+  <button class="c pay" data-c="${i}" aria-label="Copiar valor exato a pagar"><small>A pagar ⧉</small><b>${fmtM(v.due)}</b><span class="m">${v.due===undefined?"—":fmtN(Math.round(v.due),0)+" mesos"}</span></button>
+  <div class="c ac"><button class="ic${b.done?" on":""}" data-d="${i}" aria-label="${b.done?"Reabrir":"Concluir"}" title="${b.done?"Reabrir":"Concluir"}">${b.done?"✓":""}</button><button class="ic bad" data-x="${i}" aria-label="Excluir comprador">${IT}</button></div></div>
+  <button class="et" data-e="${i}">${b.edit?"▼":"▶"} Editar comprador</button>
+  ${b.edit?`<div class="ed r"><label>Início: nível<input data-i="${i}" data-k="sl" type="number" min="1" max="200" value="${s.level}"></label><label>Início: EXP %<input data-i="${i}" data-k="se" type="number" min="0" max="99.99" step="0.01" value="${s.exp}"></label><label>Atual: nível<input data-i="${i}" data-k="cl" type="number" min="1" max="200" value="${c.level}"></label><label>Atual: EXP %<input data-i="${i}" data-k="ce" type="number" min="0" max="99.99" step="0.01" value="${c.exp}"></label></div>`:""}</div>`}).join("")
+  :`<p class="m">Ainda não há compradores nesta run. Adicione um para buscar a EXP inicial dele.</p>`;
+ $("tot").innerHTML=`<div><b>${fmtM(tm)}</b><span>Total a pagar</span></div><div><b>${r.buyers.length}</b><span>Compradores</span></div><div><b>${fmtE(te)}</b><span>EXP total</span></div>`;
  const e=S.est;for(const k of ["fl","fe","tl","te","mode","er","eh","ex"])$(k).value=e[k];
  document.querySelectorAll(".eR").forEach(x=>x.style.display=e.mode==="ratio"?"":"none");
  document.querySelectorAll(".eH").forEach(x=>x.style.display=e.mode==="hourly"?"":"none");
@@ -184,11 +222,11 @@ function render(){
 
 async function addBuyer(){
  const n=$("nick").value.trim();if(!n)return;
- if(S.buyers.some(b=>b.ign.toLowerCase()===n.toLowerCase()&&!b.done)){msg("Esse comprador já está na lista.","er");return}
+ if(R().buyers.some(b=>b.ign.toLowerCase()===n.toLowerCase()&&!b.done)){msg("Esse comprador já está na lista.","er");return}
  $("add").disabled=true;$("add").textContent="Adicionando…";msg("");
  try{
   const c=await getChar(n),snap={level:c.level,exp:c.exp};
-  S.buyers.push({id:Date.now(),ign:c.ign,job:c.job,start:snap,cur:{...snap},done:false});
+  R().buyers.push({id:Date.now(),ign:c.ign,job:c.job,start:snap,cur:{...snap},done:false});
   $("nick").value="";save();render();
  }catch(e){msg(e.message,"er")}
  $("add").disabled=false;$("add").textContent="Adicionar";
@@ -197,7 +235,7 @@ async function addBuyer(){
 $("add").onclick=addBuyer;
 $("addM").onclick=()=>{
  const n=$("nick").value.trim();if(!n)return;
- S.buyers.push({id:Date.now(),ign:n,job:"",start:{level:120,exp:0},cur:{level:120,exp:0},done:false,edit:true});
+ R().buyers.push({id:Date.now(),ign:n,job:"",start:{level:120,exp:0},cur:{level:120,exp:0},done:false,edit:true});
  $("nick").value="";save();render();
 };
 async function copy(t){
@@ -206,7 +244,7 @@ async function copy(t){
   const ok=document.execCommand("copy");a.remove();if(!ok)throw 0}
 }
 $("copyAll").onclick=async()=>{
- let tm=0;for(const b of S.buyers)tm+=view(b).due||0;
+ let tm=0;for(const b of R().buyers)tm+=view(b).due||0;
  try{await copy(exact(tm));msg("Total copiado: "+exact(tm),"ok")}catch{msg("Não foi possível copiar.","er")}
 };
 $("copyEst").onclick=async()=>{
@@ -215,7 +253,7 @@ $("copyEst").onclick=async()=>{
  try{if(c===undefined)throw 0;await copy(exact(c));msg("Custo copiado: "+exact(c),"ok")}catch{msg("Não foi possível copiar.","er")}
 };
 $("upAll").onclick=async()=>{
- const bs=S.buyers.filter(b=>!b.done);if(!bs.length){msg("Não há compradores ativos para atualizar.","er");return}
+ const bs=R().buyers.filter(b=>!b.done);if(!bs.length){msg("Não há compradores ativos para atualizar.","er");return}
  const btn=$("upAll");btn.disabled=true;btn.textContent="Atualizando…";msg("");
  const res=await Promise.allSettled(bs.map(b=>getChar(b.ign)));
  let up=0;const same=[],fail=[];
@@ -230,11 +268,11 @@ $("upAll").onclick=async()=>{
  if(same.length)p.push(`sem mudança: ${same.join(", ")}`);
  if(fail.length)p.push(`falhou: ${fail.join(", ")}`);
  msg(p.join(" · "),fail.length||same.length?"er":"ok");
- btn.disabled=false;btn.textContent="Atualizar todos";
+ btn.disabled=false;btn.textContent="Atualizar EXP";
 };
 $("list").onchange=e=>{
  const i=e.target.dataset.i;if(i===undefined)return;
- const b=S.buyers[i],k=e.target.dataset.k,v=e.target.value;
+ const b=R().buyers[i],k=e.target.dataset.k,v=e.target.value;
  if(k==="sl")b.start.level=L(v);else if(k==="se")b.start.exp=P(v);
  else if(k==="cl")b.cur.level=L(v);else if(k==="ce")b.cur.exp=P(v);
  save();render();
@@ -243,28 +281,32 @@ $("nick").onkeydown=e=>{if(e.key==="Enter")addBuyer()};
 $("list").onclick=async e=>{
  const t=e.target.closest("button");if(!t)return;const d=t.dataset;
  if(d.r!==undefined){
-  const b=S.buyers[d.r];t.disabled=true;t.textContent="Atualizando...";
+  const b=R().buyers[d.r];t.disabled=true;t.textContent="Atualizando...";
   try{const c=await getChar(b.ign),o=b.cur||b.start,same=o.level===c.level&&o.exp===c.exp;b.cur={level:c.level,exp:c.exp};b.job=c.job||b.job;save();
    same?msg(`${b.ign}: a EXP não mudou desde a última busca. Atualize a EXP no jogo (troque de canal) e tente de novo.`,"er"):msg(`${b.ign} atualizado.`,"ok")}
   catch(x){msg(x.message,"er")}
   render();
  }else if(d.c!==undefined){
-  const v=view(S.buyers[d.c]);
+  const v=view(R().buyers[d.c]);
   try{if(v.due===undefined)throw 0;await copy(exact(v.due));msg("Valor copiado: "+exact(v.due),"ok")}catch{msg("Não foi possível copiar.","er")}
- }else if(d.e!==undefined){const b=S.buyers[d.e];b.edit=!b.edit;save();render()
- }else if(d.d!==undefined){const b=S.buyers[d.d];b.done=!b.done;save();render()}
- else if(d.x!==undefined){const b=S.buyers[d.x];if(confirm(`Excluir ${b.ign}?`)){S.buyers.splice(d.x,1);save();render()}}
+ }else if(d.e!==undefined){const b=R().buyers[d.e];b.edit=!b.edit;save();render()
+ }else if(d.d!==undefined){const b=R().buyers[d.d];b.done=!b.done;save();render()}
+ else if(d.x!==undefined){const b=R().buyers[d.x];if(confirm(`Excluir ${b.ign}?`)){R().buyers.splice(d.x,1);save();render()}}
 };
-$("ratio").onchange=e=>{S.ratio=Math.max(0,num(e.target.value,3.3));save();render()};
-$("addTier").onclick=()=>{const m=Math.max(0,...S.tiers.map(t=>t.min));S.tiers.push({min:Math.min(200,m?m+1:100),ratio:S.ratio});save();render()};
-$("tiers").onchange=e=>{const i=e.target.dataset.t,k=e.target.dataset.k;if(i===undefined)return;S.tiers[i][k]=k==="min"?L(e.target.value):Math.max(0,num(e.target.value));save();render()};
-$("tiers").onclick=e=>{const b=e.target.closest("button");if(b){S.tiers.splice(b.dataset.rt,1);save();render()}};
+$("ratio").onchange=e=>{R().ratio=Math.max(0,num(e.target.value,3.3));save();render()};
+$("addTier").onclick=()=>{const m=Math.max(0,...R().tiers.map(t=>t.min));R().tiers.push({min:Math.min(200,m?m+1:100),ratio:R().ratio});save();render()};
+$("tiers").onchange=e=>{const i=e.target.dataset.t,k=e.target.dataset.k;if(i===undefined)return;R().tiers[i][k]=k==="min"?L(e.target.value):Math.max(0,num(e.target.value));save();render()};
+$("tiers").onclick=e=>{const b=e.target.closest("button");if(b){R().tiers.splice(b.dataset.rt,1);save();render()}};
 for(const k of ["fl","tl"])$(k).onchange=e=>{S.est[k]=L(e.target.value);save();render()};
 for(const k of ["fe","te"])$(k).onchange=e=>{S.est[k]=P(e.target.value);save();render()};
 for(const k of ["er","eh","ex"])$(k).onchange=e=>{S.est[k]=Math.max(0,num(e.target.value));save();render()};
 $("mode").onchange=e=>{S.est.mode=e.target.value;save();render()};
 $("base").onchange=e=>{S.cfg.base=e.target.value.trim()||D.cfg.base;save();render()};
 $("proxy").onchange=e=>{S.cfg.proxy=e.target.value.trim();save()};
+$("newRun").onclick=()=>{const c=R(),r=mk("Run "+(S.runs.length+1),c.ratio,c.tiers.map(t=>({...t})));S.runs.push(r);S.cur=r.id;save();render();$("runName").focus();$("runName").select()};
+$("runs").onclick=e=>{const b=e.target.closest("button[data-run]");if(b){S.cur=b.dataset.run;save();render()}};
+$("runName").onchange=e=>{R().name=e.target.value.trim()||"Run";save();render()};
+$("delRun").onclick=()=>{const r=R();if(!confirm(`Excluir a run "${r.name}" e todos os compradores dela?`))return;S.runs=S.runs.filter(x=>x!==r);if(!S.runs.length)S.runs.push(mk("Run 1",3.3));S.cur=S.runs[0].id;save();render()};
 render();
 </script>
 </body>
