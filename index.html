@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Leech | MapleLegends</title>
+<style>
+:root{--bg:#f4f1ea;--pn:#fffdf8;--tx:#262320;--mu:#7a736a;--ln:#ded8cb;--ac:#a97a12;--ac2:#fff;--ok:#2f7d4f;--er:#b3382c}
+@media(prefers-color-scheme:dark){:root{--bg:#14171c;--pn:#1c2027;--tx:#e8e4da;--mu:#8d96a3;--ln:#2d333d;--ac:#e2b24c;--ac2:#1a1405;--ok:#6fcf97;--er:#f08a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 14px 60px;display:grid;gap:16px}
+h1{font-size:22px;margin:0}h2{font-size:15px;margin:0 0 10px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sub{color:var(--mu);font-size:13px}
+.p{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:14px}
+.g{display:grid;gap:16px;grid-template-columns:1fr 1fr}
+@media(max-width:760px){.g{grid-template-columns:1fr}}
+input,select,button{font:inherit;color:inherit}
+input,select{background:var(--bg);border:1px solid var(--ln);border-radius:6px;padding:6px 8px;width:100%}
+input:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+button{background:var(--bg);border:1px solid var(--ln);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:var(--ac)}
+button.pri{background:var(--ac);color:var(--ac2);border-color:var(--ac);font-weight:600}
+button:disabled{opacity:.5;cursor:wait}
+label{display:grid;gap:3px;font-size:13px;color:var(--mu)}
+.r{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.r>*{flex:1;min-width:90px}.r>button{flex:0 0 auto}
+.tot{display:flex;gap:28px;flex-wrap:wrap}
+.tot b{display:block;font-size:26px;color:var(--ac)}.tot span{font-size:13px;color:var(--mu)}
+.b{display:grid;grid-template-columns:44px 1fr auto;gap:4px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--ln)}
+.b img{width:44px;height:44px;object-fit:contain;background:var(--bg);border-radius:6px}
+.b .due{font-size:18px;font-weight:700;color:var(--ac);text-align:right}
+.b .ac{grid-column:2/4;display:flex;gap:6px;flex-wrap:wrap}
+.b.done{opacity:.6}
+.m{color:var(--mu);font-size:13px}
+#msg{padding:9px 12px;border-radius:8px;border:1px solid var(--ln);display:none}
+#msg.er{display:block;color:var(--er);border-color:var(--er)}#msg.ok{display:block;color:var(--ok);border-color:var(--ok)}
+.t{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:6px}
+details summary{cursor:pointer;font-size:13px;color:var(--mu)}
+</style>
+</head>
+<body>
+<main>
+<header>
+ <div><h1>Calculadora de Leech</h1><div class="sub">MapleLegends · EXP lida do ranking</div></div>
+</header>
+<div id="msg" role="status"></div>
+
+<section class="p">
+ <h2>Compradores</h2>
+ <div class="r"><label>Nome do personagem<input id="nick" placeholder="NomeDoComprador" autocomplete="off"></label><button class="pri" id="add">Adicionar</button></div>
+ <p class="m">Atualize a EXP no jogo antes de buscar: entre em um mapa, troque de canal ou saia do Cash Shop.</p>
+ <div id="list"></div>
+</section>
+
+<div class="g">
+ <section class="p"><h2>Status</h2><div class="tot" id="tot"></div></section>
+ <section class="p">
+  <h2>Preço</h2>
+  <label>Proporção (1 meso : EXP)<input id="ratio" type="number" min="0" step="0.1"></label>
+  <div id="tiers"></div>
+  <button id="addTier" style="margin-top:8px">Adicionar faixa</button>
+  <p class="m">Faixas mudam a proporção a partir de um nível (Nível ≥).</p>
+ </section>
+</div>
+
+<section class="p">
+ <h2>Calculadora</h2>
+ <div class="g">
+  <div class="r"><label>De: nível<input id="fl" type="number" min="1" max="200"></label><label>EXP %<input id="fe" type="number" min="0" max="99.99" step="0.01"></label></div>
+  <div class="r"><label>Até: nível<input id="tl" type="number" min="1" max="200"></label><label>EXP %<input id="te" type="number" min="0" max="99.99" step="0.01"></label></div>
+ </div>
+ <div class="r" style="margin-top:10px">
+  <label>Tipo<select id="mode"><option value="ratio">Proporção</option><option value="hourly">Por hora</option></select></label>
+  <label class="eR">Proporção (1 : EXP)<input id="er" type="number" min="0" step="0.1"></label>
+  <label class="eH">Valor por hora (M)<input id="eh" type="number" min="0" step="0.5"></label>
+  <label class="eH">EXP por hora (M)<input id="ex" type="number" min="0" step="0.5"></label>
+ </div>
+ <div class="tot" id="res" style="margin-top:12px"></div>
+</section>
+
+<details class="p"><summary>Fonte do ranking (avançado)</summary>
+ <div class="r" style="margin-top:8px"><label>Site do ranking<input id="base"></label><label>Proxy próprio (opcional)<input id="proxy" placeholder="https://seu-worker.workers.dev"></label></div>
+ <p class="m">Se o navegador bloquear a busca, use o proxy do arquivo worker.js. Sem proxy, o site tenta direto e depois por proxies públicos.</p>
+</details>
+</main>
+
+<script>
+const DR=[15,34,57,92,135,372,560,840,1242,1716,2360,3216,4200,5460,7050,8840,11040,13716,16680,20216,24402,28980,34320,40512,47216,54900,63666,73080,83720,95700,108480,122760,138666,155540,174216,194832,216600,240500,266682,294216,324240,356916,391160,428280,468450,510420,555680,604416,655200,709716,748608,789631,832902,878545,926689,977471,1031036,1087536,1147132,1209994,1276301,1346242,1420016,1497832,1579913,1666492,1757815,1854143,1955750,2062925,2175973,2295216,2420993,2553663,2693603,2841212,2996910,3161140,3334370,3517093,3709829,3913127,4127566,4353756,4592341,4844001,5109452,5389449,5684790,5996316,6324914,6671519,7037118,7422752,7829518,8258575,8711144,9188514,9692044,10223168,10783397,11374327,11997640,12655110,13348610,14080113,14851703,15665576,16524049,17429566,18384706,19392187,20454878,21575805,22758159,24005306,25320796,26708375,28171993,29715818,31344244,33061908,34873700,36784778,38800583,40926854,43169645,45535341,48030677,50662758,53439077,56367538,59456479,62714694,66151459,69776558,73600313,77633610,81887931,86375389,91108760,96101520,101367883,106922842,112782213,118962678,125481832,132358236,139611467,147262175,155332142,163844343,172823012,182293713,192283408,202820538,213935103,225658746,238024845,251068606,264827165,279339693,294647508,310794191,327825712,345790561,364739883,384727628,405810702,428049128,451506220,476248760,502347192,529875818,558913012,589541445,621848316,655925603,691870326,729784819,769777027,811960808,856456260,903390063,952895838,1005114529,1060194805,1118293480,1179575962,1244216724,1312399800,1384319309,1460180007,1540197871,1624600714,1713628833,1807535693,1906588648,2011069705,2121276324];
+const PR=[];{let t=0;for(const e of DR){PR.push(t);t+=e}}
+const $=id=>document.getElementById(id);
+const KEY="leech-hs-v1";
+const D={ratio:3.3,tiers:[],buyers:[],cfg:{base:"https://dev.legends.ml",proxy:""},est:{fl:120,fe:0,tl:125,te:0,mode:"ratio",er:3.3,eh:12,ex:35}};
+let S=D;
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s)S={...D,...s,cfg:{...D.cfg,...s.cfg},est:{...D.est,...s.est}}}catch{}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch{}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=(v,d=0)=>{const n=parseFloat(String(v).replace(",","."));return Number.isFinite(n)?n:d};
+const L=l=>Math.max(1,Math.min(200,Math.round(num(l,1))));
+const P=p=>Math.max(0,Math.min(99.99,num(p)));
+const cum=(l,p)=>PR[l-1]+DR[l-1]*Math.min(100,Math.max(0,p))/100;
+const fmtN=(n,d=2)=>n.toLocaleString("pt-BR",{maximumFractionDigits:d});
+const fmtM=v=>v===undefined?"—":v>=1e6?fmtN(v/1e6)+"M":fmtN(Math.round(v),0);
+const fmtE=v=>v>=1e6?fmtN(v/1e6)+"M":fmtN(Math.round(v),0);
+
+function mesos(sl,sp,el,ep,ratio,tiers){
+ const a=cum(sl,sp),o=Math.max(a,cum(el,ep));let r=ratio,c=a,sum=0;
+ for(const t of [...tiers].sort((x,y)=>x.min-y.min)){
+  const e=cum(t.min,0);
+  if(e<=a){r=t.ratio;continue}
+  if(e>=o)break;
+  if(r<=0)return;
+  sum+=(e-c)/r;c=e;r=t.ratio;
+ }
+ if(r<=0)return;
+ return sum+(o-c)/r;
+}
+
+function msg(t,k){const m=$("msg");m.textContent=t||"";m.className=t?k:"";if(k==="ok")setTimeout(()=>{if(m.textContent===t)msg("")},3500)}
+
+function parse(html,name){
+ const d=new DOMParser().parseFromString(html,"text/html"),w=name.trim().toLowerCase();
+ for(const r of d.querySelectorAll("table tr")){
+  const a=r.querySelector('a[href*="name="]'),td=r.querySelectorAll("td");
+  if(!a||td.length<5)continue;
+  let ign;try{ign=new URL(a.getAttribute("href"),"https://x.y").searchParams.get("name")}catch{}
+  ign=ign||a.textContent.trim();
+  if(ign.toLowerCase()!==w)continue;
+  const last=td[td.length-1],lv=parseInt((last.querySelector("strong")||last).textContent,10),m=last.textContent.match(/(\d+(?:[.,]\d+)?)\s*%/);
+  if(lv)return{ign,level:lv,exp:m?num(m[1]):0,job:(td[3].textContent||"").trim()};
+ }
+ return null;
+}
+
+async function getChar(name){
+ const t=S.cfg.base.replace(/\/$/,"")+"/ranking/all?search="+encodeURIComponent(name);
+ const px=S.cfg.proxy.trim();
+ const urls=px?[px+(px.includes("?")?"&":"?")+"url="+encodeURIComponent(t)]
+  :[t,"https://api.allorigins.win/raw?url="+encodeURIComponent(t),"https://corsproxy.io/?url="+encodeURIComponent(t)];
+ let reached=false;
+ for(const u of urls){
+  try{
+   const r=await fetch(u);if(!r.ok)continue;
+   const x=await r.text(),c=parse(x,name);
+   if(c)return{...c,at:Date.now()};
+   if(x.length>1000)reached=true;
+  }catch{}
+ }
+ throw new Error(reached?`Personagem "${name}" não encontrado no ranking.`:"Não foi possível acessar o ranking. Tente de novo ou configure um proxy em Fonte do ranking.");
+}
+
+function view(b){
+ const c=b.cur||b.start,g=b.start?Math.max(0,cum(c.level,c.exp)-cum(b.start.level,b.start.exp)):0;
+ const due=b.start?mesos(b.start.level,b.start.exp,c.level,c.exp,S.ratio,S.tiers):undefined;
+ return{c,g,due};
+}
+
+function render(){
+ $("ratio").value=S.ratio;
+ $("tiers").innerHTML=S.tiers.map((t,i)=>`<div class="t"><input data-t="${i}" data-k="min" type="number" min="1" max="200" value="${t.min}" aria-label="Nível ≥"><input data-t="${i}" data-k="ratio" type="number" min="0" step="0.1" value="${t.ratio}" aria-label="Proporção"><button data-rt="${i}" aria-label="Remover faixa ${i+1}">✕</button></div>`).join("");
+ let tm=0,te=0;
+ $("list").innerHTML=S.buyers.length?S.buyers.map((b,i)=>{
+  const v=view(b);tm+=v.due||0;te+=v.g;
+  const av=S.cfg.base.replace(/\/$/,"")+"/avatar/"+encodeURIComponent(b.ign)+".png";
+  return`<div class="b${b.done?" done":""}"><img src="${av}" alt="" onerror="this.style.visibility='hidden'">
+  <div><b>${esc(b.ign)}</b> <span class="m">${esc(b.job||"")}</span><div class="m">Início: Nv.${b.start.level} · ${fmtN(b.start.exp)}% → Atual: Nv.${v.c.level} · ${fmtN(v.c.exp)}%</div><div class="m">EXP ganha: ${fmtE(v.g)}</div></div>
+  <div class="due">${fmtM(v.due)}</div>
+  <div class="ac"><button data-r="${i}" ${b.done?"disabled":""}>Atualizar EXP</button><button data-c="${i}">Copiar valor</button><button data-d="${i}">${b.done?"Reabrir":"Concluir"}</button><button data-x="${i}">Excluir</button></div></div>`}).join("")
+  :`<p class="m">Ainda não há compradores. Adicione um para buscar a EXP inicial dele.</p>`;
+ $("tot").innerHTML=`<div><b>${fmtM(tm)}</b><span>Total a pagar</span></div><div><b>${S.buyers.length}</b><span>Compradores</span></div><div><b>${fmtE(te)}</b><span>EXP total</span></div>`;
+ const e=S.est;for(const k of ["fl","fe","tl","te","mode","er","eh","ex"])$(k).value=e[k];
+ document.querySelectorAll(".eR").forEach(x=>x.style.display=e.mode==="ratio"?"":"none");
+ document.querySelectorAll(".eH").forEach(x=>x.style.display=e.mode==="hourly"?"":"none");
+ const need=Math.max(0,cum(L(e.tl),P(e.te))-cum(L(e.fl),P(e.fe)));
+ let h=`<div><b>${fmtE(need)}</b><span>EXP necessária</span></div>`;
+ if(e.mode==="ratio"){const c=e.er>0?need/e.er:undefined;h+=`<div><b>${fmtM(c)}</b><span>Custo estimado</span></div>`}
+ else{const r=e.ex>0?need/(e.ex*1e6):undefined;h+=`<div><b>${r===undefined?"—":fmtN(r)+" h"}</b><span>Tempo estimado</span></div><div><b>${r===undefined?"—":fmtM(r*e.eh*1e6)}</b><span>Custo estimado</span></div>`}
+ $("res").innerHTML=h;
+ $("base").value=S.cfg.base;$("proxy").value=S.cfg.proxy;
+}
+
+async function addBuyer(){
+ const n=$("nick").value.trim();if(!n)return;
+ if(S.buyers.some(b=>b.ign.toLowerCase()===n.toLowerCase()&&!b.done)){msg("Esse comprador já está na lista.","er");return}
+ $("add").disabled=true;$("add").textContent="Adicionando…";msg("");
+ try{
+  const c=await getChar(n),snap={level:c.level,exp:c.exp};
+  S.buyers.push({id:Date.now(),ign:c.ign,job:c.job,start:snap,cur:snap,done:false});
+  $("nick").value="";save();render();
+ }catch(e){msg(e.message,"er")}
+ $("add").disabled=false;$("add").textContent="Adicionar";
+}
+
+$("add").onclick=addBuyer;
+$("nick").onkeydown=e=>{if(e.key==="Enter")addBuyer()};
+$("list").onclick=async e=>{
+ const t=e.target.closest("button");if(!t)return;const d=t.dataset;
+ if(d.r!==undefined){
+  const b=S.buyers[d.r];t.disabled=true;t.textContent="Atualizando...";
+  try{const c=await getChar(b.ign);b.cur={level:c.level,exp:c.exp};b.job=c.job||b.job;save();msg(`${b.ign} atualizado.`,"ok")}
+  catch(x){msg(x.message,"er")}
+  render();
+ }else if(d.c!==undefined){
+  const v=view(S.buyers[d.c]);
+  try{await navigator.clipboard.writeText(fmtM(v.due));msg("Valor copiado.","ok")}catch{msg("Não foi possível copiar.","er")}
+ }else if(d.d!==undefined){const b=S.buyers[d.d];b.done=!b.done;save();render()}
+ else if(d.x!==undefined){const b=S.buyers[d.x];if(confirm(`Excluir ${b.ign}?`)){S.buyers.splice(d.x,1);save();render()}}
+};
+$("ratio").onchange=e=>{S.ratio=Math.max(0,num(e.target.value,3.3));save();render()};
+$("addTier").onclick=()=>{const m=Math.max(0,...S.tiers.map(t=>t.min));S.tiers.push({min:Math.min(200,m?m+1:100),ratio:S.ratio});save();render()};
+$("tiers").onchange=e=>{const i=e.target.dataset.t,k=e.target.dataset.k;if(i===undefined)return;S.tiers[i][k]=k==="min"?L(e.target.value):Math.max(0,num(e.target.value));save();render()};
+$("tiers").onclick=e=>{const b=e.target.closest("button");if(b){S.tiers.splice(b.dataset.rt,1);save();render()}};
+for(const k of ["fl","tl"])$(k).onchange=e=>{S.est[k]=L(e.target.value);save();render()};
+for(const k of ["fe","te"])$(k).onchange=e=>{S.est[k]=P(e.target.value);save();render()};
+for(const k of ["er","eh","ex"])$(k).onchange=e=>{S.est[k]=Math.max(0,num(e.target.value));save();render()};
+$("mode").onchange=e=>{S.est.mode=e.target.value;save();render()};
+$("base").onchange=e=>{S.cfg.base=e.target.value.trim()||D.cfg.base;save();render()};
+$("proxy").onchange=e=>{S.cfg.proxy=e.target.value.trim();save()};
+render();
+</script>
+</body>
+</html>
