@@ -33,6 +33,7 @@ label{display:grid;gap:3px;font-size:13px;color:var(--mu)}
 .b .ac{grid-column:2/4;display:flex;gap:6px;flex-wrap:wrap}
 .b.done{opacity:.6}
 .m{color:var(--mu);font-size:13px}
+.ed{grid-column:1/4;margin-top:4px}
 #msg{padding:9px 12px;border-radius:8px;border:1px solid var(--ln);display:none}
 #msg.er{display:block;color:var(--er);border-color:var(--er)}#msg.ok{display:block;color:var(--ok);border-color:var(--ok)}
 .t{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:6px}
@@ -47,22 +48,20 @@ details summary{cursor:pointer;font-size:13px;color:var(--mu)}
 <div id="msg" role="status"></div>
 
 <section class="p">
+ <h2>Preço</h2>
+ <div class="r"><label>Proporção: 1 meso paga quanto de EXP<input id="ratio" type="number" min="0" step="0.1"></label><button id="addTier">Adicionar faixa</button></div>
+ <div id="tiers"></div>
+ <p class="m">Defina antes de adicionar compradores. Faixas mudam a proporção a partir de um nível (Nível ≥).</p>
+</section>
+
+<section class="p">
  <h2>Compradores</h2>
- <div class="r"><label>Nome do personagem<input id="nick" placeholder="NomeDoComprador" autocomplete="off"></label><button class="pri" id="add">Adicionar</button></div>
+ <div class="r"><label>Nome do personagem<input id="nick" placeholder="NomeDoComprador" autocomplete="off"></label><button class="pri" id="add">Adicionar</button><button id="addM">Adicionar manual</button></div>
  <p class="m">Atualize a EXP no jogo antes de buscar: entre em um mapa, troque de canal ou saia do Cash Shop.</p>
  <div id="list"></div>
 </section>
 
-<div class="g">
- <section class="p"><h2>Status</h2><div class="tot" id="tot"></div></section>
- <section class="p">
-  <h2>Preço</h2>
-  <label>Proporção (1 meso : EXP)<input id="ratio" type="number" min="0" step="0.1"></label>
-  <div id="tiers"></div>
-  <button id="addTier" style="margin-top:8px">Adicionar faixa</button>
-  <p class="m">Faixas mudam a proporção a partir de um nível (Nível ≥).</p>
- </section>
-</div>
+<section class="p"><h2>Status</h2><div class="tot" id="tot"></div><button id="copyAll" style="margin-top:10px">Copiar total</button></section>
 
 <section class="p">
  <h2>Calculadora</h2>
@@ -133,20 +132,21 @@ function parse(html,name){
 }
 
 async function getChar(name){
- const t=S.cfg.base.replace(/\/$/,"")+"/ranking/all?search="+encodeURIComponent(name);
- const px=S.cfg.proxy.trim();
- const urls=px?[px+(px.includes("?")?"&":"?")+"url="+encodeURIComponent(t)]
-  :[t,"https://api.allorigins.win/raw?url="+encodeURIComponent(t),"https://corsproxy.io/?url="+encodeURIComponent(t)];
- let reached=false;
- for(const u of urls){
+ const t=S.cfg.base.replace(/\/$/,"")+"/ranking/all?search="+encodeURIComponent(name)+"&_="+Date.now();
+ const px=S.cfg.proxy.trim(),en=encodeURIComponent;
+ const routes=px?[["seu proxy",px+(px.includes("?")?"&":"?")+"url="+en(t)]]
+  :[["direto",t],["proxy 1","https://api.allorigins.win/raw?disableCache=true&url="+en(t)],["proxy 2","https://corsproxy.io/?url="+en(t)]];
+ let reached=false;const why=[];
+ for(const[n,u]of routes){
   try{
-   const r=await fetch(u);if(!r.ok)continue;
+   const r=await fetch(u,{cache:"no-store"});
+   if(!r.ok){why.push(`${n}: HTTP ${r.status}`);continue}
    const x=await r.text(),c=parse(x,name);
    if(c)return{...c,at:Date.now()};
-   if(x.length>1000)reached=true;
-  }catch{}
+   why.push(`${n}: sem resultado`);if(x.length>1000)reached=true;
+  }catch{why.push(`${n}: bloqueado`)}
  }
- throw new Error(reached?`Personagem "${name}" não encontrado no ranking.`:"Não foi possível acessar o ranking. Tente de novo ou configure um proxy em Fonte do ranking.");
+ throw new Error((reached?`Personagem "${name}" não encontrado`:"Não foi possível acessar o ranking")+" ("+why.join("; ")+").");
 }
 
 function view(b){
@@ -165,7 +165,8 @@ function render(){
   return`<div class="b${b.done?" done":""}"><img src="${av}" alt="" onerror="this.style.visibility='hidden'">
   <div><b>${esc(b.ign)}</b> <span class="m">${esc(b.job||"")}</span><div class="m">Início: Nv.${b.start.level} · ${fmtN(b.start.exp)}% → Atual: Nv.${v.c.level} · ${fmtN(v.c.exp)}%</div><div class="m">EXP ganha: ${fmtE(v.g)}</div></div>
   <div class="due">${fmtM(v.due)}</div>
-  <div class="ac"><button data-r="${i}" ${b.done?"disabled":""}>Atualizar EXP</button><button data-c="${i}">Copiar valor</button><button data-d="${i}">${b.done?"Reabrir":"Concluir"}</button><button data-x="${i}">Excluir</button></div></div>`}).join("")
+  <div class="ac"><button class="pri" data-c="${i}">Copiar valor</button><button data-r="${i}" ${b.done?"disabled":""}>Atualizar EXP</button><button data-e="${i}">${b.edit?"Fechar edição":"Editar"}</button><button data-d="${i}">${b.done?"Reabrir":"Concluir"}</button><button data-x="${i}">Excluir</button></div>
+  ${b.edit?`<div class="ed r"><label>Início: nível<input data-i="${i}" data-k="sl" type="number" min="1" max="200" value="${b.start.level}"></label><label>Início: EXP %<input data-i="${i}" data-k="se" type="number" min="0" max="99.99" step="0.01" value="${b.start.exp}"></label><label>Atual: nível<input data-i="${i}" data-k="cl" type="number" min="1" max="200" value="${v.c.level}"></label><label>Atual: EXP %<input data-i="${i}" data-k="ce" type="number" min="0" max="99.99" step="0.01" value="${v.c.exp}"></label></div>`:""}</div>`}).join("")
   :`<p class="m">Ainda não há compradores. Adicione um para buscar a EXP inicial dele.</p>`;
  $("tot").innerHTML=`<div><b>${fmtM(tm)}</b><span>Total a pagar</span></div><div><b>${S.buyers.length}</b><span>Compradores</span></div><div><b>${fmtE(te)}</b><span>EXP total</span></div>`;
  const e=S.est;for(const k of ["fl","fe","tl","te","mode","er","eh","ex"])$(k).value=e[k];
@@ -185,24 +186,47 @@ async function addBuyer(){
  $("add").disabled=true;$("add").textContent="Adicionando…";msg("");
  try{
   const c=await getChar(n),snap={level:c.level,exp:c.exp};
-  S.buyers.push({id:Date.now(),ign:c.ign,job:c.job,start:snap,cur:snap,done:false});
+  S.buyers.push({id:Date.now(),ign:c.ign,job:c.job,start:snap,cur:{...snap},done:false});
   $("nick").value="";save();render();
  }catch(e){msg(e.message,"er")}
  $("add").disabled=false;$("add").textContent="Adicionar";
 }
 
 $("add").onclick=addBuyer;
+$("addM").onclick=()=>{
+ const n=$("nick").value.trim();if(!n)return;
+ S.buyers.push({id:Date.now(),ign:n,job:"",start:{level:120,exp:0},cur:{level:120,exp:0},done:false,edit:true});
+ $("nick").value="";save();render();
+};
+async function copy(t){
+ try{await navigator.clipboard.writeText(t)}catch{
+  const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();
+  const ok=document.execCommand("copy");a.remove();if(!ok)throw 0}
+}
+$("copyAll").onclick=async()=>{
+ let tm=0;for(const b of S.buyers)tm+=view(b).due||0;
+ try{await copy(fmtM(tm));msg("Total copiado.","ok")}catch{msg("Não foi possível copiar.","er")}
+};
+$("list").onchange=e=>{
+ const i=e.target.dataset.i;if(i===undefined)return;
+ const b=S.buyers[i],k=e.target.dataset.k,v=e.target.value;
+ if(k==="sl")b.start.level=L(v);else if(k==="se")b.start.exp=P(v);
+ else if(k==="cl")b.cur.level=L(v);else if(k==="ce")b.cur.exp=P(v);
+ save();render();
+};
 $("nick").onkeydown=e=>{if(e.key==="Enter")addBuyer()};
 $("list").onclick=async e=>{
  const t=e.target.closest("button");if(!t)return;const d=t.dataset;
  if(d.r!==undefined){
   const b=S.buyers[d.r];t.disabled=true;t.textContent="Atualizando...";
-  try{const c=await getChar(b.ign);b.cur={level:c.level,exp:c.exp};b.job=c.job||b.job;save();msg(`${b.ign} atualizado.`,"ok")}
+  try{const c=await getChar(b.ign),o=b.cur||b.start,same=o.level===c.level&&o.exp===c.exp;b.cur={level:c.level,exp:c.exp};b.job=c.job||b.job;save();
+   same?msg(`${b.ign}: a EXP não mudou desde a última busca. Atualize a EXP no jogo (troque de canal) e tente de novo.`,"er"):msg(`${b.ign} atualizado.`,"ok")}
   catch(x){msg(x.message,"er")}
   render();
  }else if(d.c!==undefined){
   const v=view(S.buyers[d.c]);
-  try{await navigator.clipboard.writeText(fmtM(v.due));msg("Valor copiado.","ok")}catch{msg("Não foi possível copiar.","er")}
+  try{await copy(fmtM(v.due));msg("Valor copiado.","ok")}catch{msg("Não foi possível copiar.","er")}
+ }else if(d.e!==undefined){const b=S.buyers[d.e];b.edit=!b.edit;save();render()
  }else if(d.d!==undefined){const b=S.buyers[d.d];b.done=!b.done;save();render()}
  else if(d.x!==undefined){const b=S.buyers[d.x];if(confirm(`Excluir ${b.ign}?`)){S.buyers.splice(d.x,1);save();render()}}
 };
