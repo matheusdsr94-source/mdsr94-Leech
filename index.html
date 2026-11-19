@@ -56,7 +56,7 @@ details summary{cursor:pointer;font-size:13px;color:var(--mu)}
 
 <section class="p">
  <h2>Compradores</h2>
- <div class="r"><label>Nome do personagem<input id="nick" placeholder="NomeDoComprador" autocomplete="off"></label><button class="pri" id="add">Adicionar</button><button id="addM">Adicionar manual</button></div>
+ <div class="r"><label>Nome do personagem<input id="nick" placeholder="NomeDoComprador" autocomplete="off"></label><button class="pri" id="add">Adicionar</button><button id="addM">Adicionar manual</button><button id="upAll">Atualizar todos</button></div>
  <p class="m">Atualize a EXP no jogo antes de buscar: entre em um mapa, troque de canal ou saia do Cash Shop.</p>
  <div id="list"></div>
 </section>
@@ -76,6 +76,7 @@ details summary{cursor:pointer;font-size:13px;color:var(--mu)}
   <label class="eH">EXP por hora (M)<input id="ex" type="number" min="0" step="0.5"></label>
  </div>
  <div class="tot" id="res" style="margin-top:12px"></div>
+ <button class="pri" id="copyEst" style="margin-top:10px">Copiar custo</button>
 </section>
 
 <details class="p"><summary>Fonte do ranking (avançado)</summary>
@@ -100,6 +101,7 @@ const P=p=>Math.max(0,Math.min(99.99,num(p)));
 const cum=(l,p)=>PR[l-1]+DR[l-1]*Math.min(100,Math.max(0,p))/100;
 const fmtN=(n,d=2)=>n.toLocaleString("pt-BR",{maximumFractionDigits:d});
 const fmtM=v=>v===undefined?"—":v>=1e6?fmtN(v/1e6)+"M":fmtN(Math.round(v),0);
+const exact=v=>v===undefined||!Number.isFinite(v)?"":String(Math.round(v));
 const fmtE=v=>v>=1e6?fmtN(v/1e6)+"M":fmtN(Math.round(v),0);
 
 function mesos(sl,sp,el,ep,ratio,tiers){
@@ -205,7 +207,30 @@ async function copy(t){
 }
 $("copyAll").onclick=async()=>{
  let tm=0;for(const b of S.buyers)tm+=view(b).due||0;
- try{await copy(fmtM(tm));msg("Total copiado.","ok")}catch{msg("Não foi possível copiar.","er")}
+ try{await copy(exact(tm));msg("Total copiado: "+exact(tm),"ok")}catch{msg("Não foi possível copiar.","er")}
+};
+$("copyEst").onclick=async()=>{
+ const e=S.est,need=Math.max(0,cum(L(e.tl),P(e.te))-cum(L(e.fl),P(e.fe)));
+ let c;if(e.mode==="ratio")c=e.er>0?need/e.er:undefined;else c=e.ex>0?need/(e.ex*1e6)*e.eh*1e6:undefined;
+ try{if(c===undefined)throw 0;await copy(exact(c));msg("Custo copiado: "+exact(c),"ok")}catch{msg("Não foi possível copiar.","er")}
+};
+$("upAll").onclick=async()=>{
+ const bs=S.buyers.filter(b=>!b.done);if(!bs.length){msg("Não há compradores ativos para atualizar.","er");return}
+ const btn=$("upAll");btn.disabled=true;btn.textContent="Atualizando…";msg("");
+ const res=await Promise.allSettled(bs.map(b=>getChar(b.ign)));
+ let up=0;const same=[],fail=[];
+ res.forEach((r,i)=>{const b=bs[i];
+  if(r.status!=="fulfilled"){fail.push(b.ign);return}
+  const c=r.value,o=b.cur||b.start;
+  if(o.level===c.level&&o.exp===c.exp)same.push(b.ign);else up++;
+  b.cur={level:c.level,exp:c.exp};b.job=c.job||b.job;
+ });
+ save();render();
+ const p=[`${up} atualizado${up===1?"":"s"}`];
+ if(same.length)p.push(`sem mudança: ${same.join(", ")}`);
+ if(fail.length)p.push(`falhou: ${fail.join(", ")}`);
+ msg(p.join(" · "),fail.length||same.length?"er":"ok");
+ btn.disabled=false;btn.textContent="Atualizar todos";
 };
 $("list").onchange=e=>{
  const i=e.target.dataset.i;if(i===undefined)return;
@@ -225,7 +250,7 @@ $("list").onclick=async e=>{
   render();
  }else if(d.c!==undefined){
   const v=view(S.buyers[d.c]);
-  try{await copy(fmtM(v.due));msg("Valor copiado.","ok")}catch{msg("Não foi possível copiar.","er")}
+  try{if(v.due===undefined)throw 0;await copy(exact(v.due));msg("Valor copiado: "+exact(v.due),"ok")}catch{msg("Não foi possível copiar.","er")}
  }else if(d.e!==undefined){const b=S.buyers[d.e];b.edit=!b.edit;save();render()
  }else if(d.d!==undefined){const b=S.buyers[d.d];b.done=!b.done;save();render()}
  else if(d.x!==undefined){const b=S.buyers[d.x];if(confirm(`Excluir ${b.ign}?`)){S.buyers.splice(d.x,1);save();render()}}
